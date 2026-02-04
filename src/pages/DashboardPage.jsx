@@ -1,48 +1,70 @@
 
 import React from 'react';
-import { Row, Col, Button } from 'react-bootstrap';
+import { Button, Col, Row, Navbar, Nav } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
 import Budget from '../components/Budget';
-import Summary from '../components/Summary';
 import ExpenseForm from '../components/ExpenseForm';
 import ExpenseList from '../components/ExpenseList';
+import Summary from '../components/Summary';
 
 function DashboardPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
+  async function handleLogout() {
     try {
       await logout();
       navigate('/login');
     } catch (error) {
-      console.error("Failed to log out", error);
+      console.error("Failed to log out:", error);
     }
   }
 
   return (
-    <>
-      <Row className="mb-3">
-        <Col className="d-flex justify-content-between align-items-center">
-          <h1>TravelSheet Dashboard</h1>
-          <Button variant="link" onClick={handleLogout}>Log Out</Button>
-        </Col>
-      </Row>
-      <Row>
-        <Col md={4}>
-          <Budget />
-          <Summary />
-        </Col>
-        <Col md={8}>
-          <ExpenseForm />
-          <h2 className="mt-4">Transactions</h2>
-          <ExpenseList />
-        </Col>
-      </Row>
-    </>
+    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+      {/* Navbar for Logout */}
+      <Navbar bg="dark" variant="dark" expand="lg" className="mb-4 px-4">
+        <Navbar.Brand href="#home" style={{ color: 'white', fontWeight: 'bold' }}>
+          여행경비 대시보드
+        </Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="ms-auto">
+            <Button variant="outline-light" onClick={handleLogout}>로그아웃</Button>
+          </Nav>
+        </Navbar.Collapse>
+      </Navbar>
+
+      {/* Main Content */}
+      <div className="container-fluid px-4">
+        {/* Top Row: Budget and Summary */}
+        <Row className="mb-4">
+          <Col md={6}>
+            <Budget />
+          </Col>
+          <Col md={6}>
+            <Summary />
+          </Col>
+        </Row>
+
+        {/* Middle Row: Expense Form */}
+        <Row className="mb-4">
+          <Col>
+            <ExpenseForm />
+          </Col>
+        </Row>
+
+        {/* Bottom Row: Expense List */}
+        <Row>
+          <Col>
+            <ExpenseList />
+          </Col>
+        </Row>
+      </div>
+    </div>
   );
 }
 
 export default DashboardPage;
+

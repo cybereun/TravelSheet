@@ -1,48 +1,38 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card } from 'react-bootstrap';
-import { db } from '../services/firebase';
-import { ref, onValue } from "firebase/database";
-import { useAuth } from '../contexts/AuthContext';
+import { useBudgets } from '../contexts/BudgetContext';
+import { formatCurrency } from '../utils/formatCurrency';
 
 function Summary() {
-  const { currentUser } = useAuth();
-  const [budget, setBudget] = useState(0);
-  const [totalExpenses, setTotalExpenses] = useState(0);
+  const { budget, expenses } = useBudgets();
 
-  useEffect(() => {
-    if (currentUser) {
-      // Fetch budget
-      const budgetDbRef = ref(db, `users/${currentUser.uid}/settings/budget`);
-      onValue(budgetDbRef, (snapshot) => {
-        setBudget(snapshot.val() || 0);
-      });
+  // 수입만 계산 (양수 금액)
+  const totalIncome = expenses
+    .filter(expense => expense.amount > 0)
+    .reduce((total, expense) => total + expense.amount, 0);
 
-      // Fetch and calculate total expenses
-      const expensesRef = ref(db, `users/${currentUser.uid}/expenses`);
-      onValue(expensesRef, (snapshot) => {
-        const expenses = snapshot.val();
-        let total = 0;
-        for (let id in expenses) {
-          total += expenses[id].amount;
-        }
-        setTotalExpenses(total);
-      });
-    }
-  }, [currentUser]);
+  // 지출만 계산 (음수 금액)
+  const totalSpending = expenses
+    .filter(expense => expense.amount < 0)
+    .reduce((total, expense) => total + expense.amount, 0);
 
-  const remaining = budget + totalExpenses;
+  // 남은 금액 계산 (예산 + 수입 + 지출)
+  const remaining = budget + totalIncome + totalSpending;
 
   return (
-    <Card className="mb-4">
-        <Card.Body>
-          <Card.Title>Summary</Card.Title>
-          <h5>Budget: {new Intl.NumberFormat().format(budget)}</h5>
-          <h5>Expenses: {new Intl.NumberFormat().format(totalExpenses)}</h5>
-          <hr />
-          <h4>Remaining: {new Intl.NumberFormat().format(remaining)}</h4>
-        </Card.Body>
-      </Card>
+    <Card>
+      <Card.Body>
+        <h2 className="card-title">요약</h2>
+        <div>총 예산: {formatCurrency(budget)}</div>
+        <div>총 수입: {formatCurrency(totalIncome)}</div>
+        <div>총 지출: {formatCurrency(Math.abs(totalSpending))}</div>
+        <hr />
+        <h4 style={{ color: remaining < 0 ? 'red' : 'inherit', fontWeight: 'bold' }}>
+          남은 금액: {formatCurrency(remaining)}
+        </h4>
+      </Card.Body>
+    </Card>
   );
 }
 

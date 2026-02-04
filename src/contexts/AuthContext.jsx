@@ -1,5 +1,12 @@
 
 import React, { useContext, useState, useEffect } from 'react';
+// Import the functions we need from the Firebase Auth SDK
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged 
+} from 'firebase/auth';
 import { auth } from '../services/firebase';
 
 const AuthContext = React.createContext();
@@ -13,19 +20,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   function signup(email, password) {
-    return auth.createUserWithEmailAndPassword(email, password);
+    // Use the v9 syntax: function(auth, email, password)
+    return createUserWithEmailAndPassword(auth, email, password);
   }
 
   function login(email, password) {
-    return auth.signInWithEmailAndPassword(email, password);
+    // Use the v9 syntax: function(auth, email, password)
+    return signInWithEmailAndPassword(auth, email, password);
   }
 
   function logout() {
-    return auth.signOut();
+    // Use the v9 syntax: function(auth)
+    return signOut(auth);
   }
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
+    // onAuthStateChanged is a function that takes auth and a callback
+    const unsubscribe = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
       setLoading(false);
     });

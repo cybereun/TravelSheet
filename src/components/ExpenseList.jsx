@@ -1,51 +1,51 @@
 
-import React, { useState, useEffect } from 'react';
-import { ListGroup, Button } from 'react-bootstrap';
-import { db } from '../services/firebase';
-import { ref, onValue, remove } from "firebase/database";
-import { useAuth } from '../contexts/AuthContext';
+import React from 'react';
+import { ListGroup, Badge, Card, Button } from 'react-bootstrap';
+import { useBudgets } from '../contexts/BudgetContext.jsx';
+import { formatCurrency } from '../utils/formatCurrency';
 
 function ExpenseList() {
-  const { currentUser } = useAuth();
-  const [expenses, setExpenses] = useState([]);
-
-  useEffect(() => {
-    if (currentUser) {
-      const expensesRef = ref(db, `users/${currentUser.uid}/expenses`);
-      onValue(expensesRef, (snapshot) => {
-        const data = snapshot.val();
-        const loadedExpenses = [];
-        for (const key in data) {
-          loadedExpenses.push({ id: key, ...data[key] });
-        }
-        // Sort expenses by date in descending order
-        setExpenses(loadedExpenses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-      });
-    }
-  }, [currentUser]);
-
-  const handleDelete = (id) => {
-    if (currentUser) {
-      const expenseRef = ref(db, `users/${currentUser.uid}/expenses/${id}`);
-      remove(expenseRef);
-    }
-  };
+  const { expenses, deleteExpense } = useBudgets();
 
   return (
-    <ListGroup>
-      {expenses.map(expense => (
-        <ListGroup.Item key={expense.id} className="d-flex justify-content-between align-items-center">
-          <div>
-            <span className={expense.amount < 0 ? 'text-danger' : 'text-success'}>
-              {new Intl.NumberFormat().format(expense.amount)}
-            </span>
-            <small className="ms-2 text-muted">{expense.category}</small>
-            <div className="text-muted">{expense.description}</div>
-          </div>
-          <Button variant="outline-danger" size="sm" onClick={() => handleDelete(expense.id)}>&times;</Button>
-        </ListGroup.Item>
-      ))}
-    </ListGroup>
+    <Card>
+      <Card.Body>
+        <h2 className="card-title mb-4">거래내역</h2>
+        {expenses.length === 0 ? (
+          <p className="text-center text-muted">아직 거래 내역이 없습니다.</p>
+        ) : (
+          <ListGroup variant="flush">
+            {expenses.map(expense => (
+              <ListGroup.Item 
+                key={expense.id} 
+                className="d-flex justify-content-between align-items-center px-0"
+                style={{ borderBottom: '1px solid #dee2e6' }}
+              >
+                <div className="me-auto">
+                  <strong style={{ fontSize: '1.1rem' }}>{expense.description || expense.category}</strong>
+                  <br />
+                  <small className="text-muted">{expense.category}</small>
+                </div>
+                <Badge 
+                  bg={expense.amount > 0 ? 'success' : 'danger'} 
+                  pill 
+                  style={{ fontSize: '1rem', padding: '0.5rem 1rem', marginRight: '1rem' }}
+                >
+                  {expense.amount > 0 ? '수입' : '지출'}: {formatCurrency(Math.abs(expense.amount))}
+                </Badge>
+                <Button 
+                  variant="outline-danger" 
+                  size="sm"
+                  onClick={() => deleteExpense({ id: expense.id })}
+                >
+                  &times;
+                </Button>
+              </ListGroup.Item>
+            ))}
+          </ListGroup>
+        )}
+      </Card.Body>
+    </Card>
   );
 }
 

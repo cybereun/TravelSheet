@@ -1,56 +1,48 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, Form, Button, InputGroup, FormControl } from 'react-bootstrap';
-import { db } from '../services/firebase';
-import { ref, set, onValue } from "firebase/database";
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { Card, Form, Button } from 'react-bootstrap';
+import { useBudgets } from '../contexts/BudgetContext.jsx';
+import { formatCurrency } from '../utils/formatCurrency';
 
 function Budget() {
-  const { currentUser } = useAuth();
-  const [budget, setBudget] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
-  const budgetRef = useRef();
+  const [amount, setAmount] = useState('');
+  const { budget, setBudget } = useBudgets();
 
   useEffect(() => {
-    if (currentUser) {
-      const budgetDbRef = ref(db, `users/${currentUser.uid}/settings/budget`);
-      onValue(budgetDbRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data !== null) {
-          setBudget(data);
-        }
-      });
-    }
-  }, [currentUser]);
+    // Display the current budget, ensuring it's a valid number
+    setAmount(budget || '');
+  }, [budget]);
 
-  const handleSave = () => {
-    const newBudget = parseFloat(budgetRef.current.value);
-    if (!isNaN(newBudget)) {
-      const budgetDbRef = ref(db, `users/${currentUser.uid}/settings/budget`);
-      set(budgetDbRef, newBudget);
-      setIsEditing(false);
+  const handleSetBudget = (e) => {
+    e.preventDefault();
+    const newBudget = parseFloat(amount);
+    if (!isNaN(newBudget) && newBudget >= 0) {
+      setBudget(newBudget);
+    } else {
+      // Optionally, provide feedback for invalid input
+      alert("Please enter a valid, non-negative number for the budget.");
+      setAmount(budget || ''); // Revert to the last valid budget
     }
   };
 
   return (
-    <Card>
+    <Card className="mb-4">
       <Card.Body>
-        <Card.Title>Budget</Card.Title>
-        {isEditing ? (
-          <InputGroup>
-            <FormControl
+        <h2 className="card-title">예산</h2>
+        <Form onSubmit={handleSetBudget}>
+          <Form.Group>
+            <Form.Label>예산 설정</Form.Label>
+            <Form.Control 
               type="number"
-              defaultValue={budget}
-              ref={budgetRef}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder={`Current: ${formatCurrency(budget)}`}
+              min="0"
+              step="1000"
             />
-            <Button onClick={handleSave}>Save</Button>
-          </InputGroup>
-        ) : (
-          <div className="d-flex justify-content-between align-items-center">
-            <h2>{new Intl.NumberFormat().format(budget)}</h2>
-            <Button variant="outline-primary" onClick={() => setIsEditing(true)}>Edit</Button>
-          </div>
-        )}
+          </Form.Group>
+          <Button type="submit" className="mt-3">Save</Button>
+        </Form>
       </Card.Body>
     </Card>
   );

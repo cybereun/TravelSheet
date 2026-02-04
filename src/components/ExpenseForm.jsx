@@ -1,72 +1,87 @@
 
-import React, { useRef } from 'react';
-import { Form, Button, Card, Col, Row } from 'react-bootstrap';
-import { db } from '../services/firebase';
-import { ref, push, set } from "firebase/database";
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from 'react';
+import { Card, Form, Button, Row, Col } from 'react-bootstrap';
+import { useBudgets } from '../contexts/BudgetContext.jsx';
 
-const categories = ["Accommodation", "Transport", "Food", "Cafe", "Sightseeing", "Other"];
+const categories = [
+  "숙박",
+  "교통",
+  "식비",
+  "쇼핑",
+  "엔터테인먼트",
+  "기타"
+];
 
 function ExpenseForm() {
-  const { currentUser } = useAuth();
-  const amountRef = useRef();
-  const categoryRef = useRef();
-  const descriptionRef = useRef();
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState(categories[0]);
+  const { addExpense, addIncome } = useBudgets();
 
-  const handleSubmit = (e, isExpense) => {
-    e.preventDefault();
-    const amount = parseFloat(amountRef.current.value);
-    if (isNaN(amount) || amount === 0) return;
+  const handleAddExpense = () => {
+    const newAmount = parseFloat(amount);
+    if (!isNaN(newAmount) && newAmount > 0) {
+      addExpense({ amount: newAmount, description, category });
+      resetForm();
+    }
+  };
 
-    const expense = {
-      amount: isExpense ? -amount : amount,
-      category: categoryRef.current.value,
-      description: descriptionRef.current.value,
-      createdAt: new Date().toISOString(),
-    };
+  const handleAddIncome = () => {
+    const newAmount = parseFloat(amount);
+    if (!isNaN(newAmount) && newAmount > 0) {
+      addIncome({ amount: newAmount, description, category });
+      resetForm();
+    }
+  };
 
-    const expensesRef = ref(db, `users/${currentUser.uid}/expenses`);
-    const newExpenseRef = push(expensesRef);
-    set(newExpenseRef, expense);
-
-    // Reset form
-    amountRef.current.value = "";
-    descriptionRef.current.value = "";
+  const resetForm = () => {
+    setAmount('');
+    setDescription('');
+    setCategory(categories[0]);
   };
 
   return (
-    <Card>
+    <Card className="mb-4">
       <Card.Body>
-        <Card.Title>Add Transaction</Card.Title>
+        <h2 className="card-title">거래 추가</h2>
         <Form>
           <Row>
-            <Col sm={6}>
+            <Col md={6}>
               <Form.Group>
-                <Form.Label>Amount</Form.Label>
-                <Form.Control type="number" ref={amountRef} required placeholder="0.00" />
+                <Form.Label>금액</Form.Label>
+                <Form.Control 
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  min="0.01"
+                  step="0.01"
+                  required 
+                />
               </Form.Group>
             </Col>
-            <Col sm={6}>
+            <Col md={6}>
               <Form.Group>
-                <Form.Label>Category</Form.Label>
-                <Form.Control as="select" ref={categoryRef}>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                <Form.Label>카테고리</Form.Label>
+                <Form.Control as="select" value={category} onChange={(e) => setCategory(e.target.value)}>
+                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </Form.Control>
               </Form.Group>
             </Col>
           </Row>
-          <Form.Group>
-            <Form.Label>Description</Form.Label>
-            <Form.Control type="text" ref={descriptionRef} placeholder="(Optional)" />
+          <Form.Group className="mt-3">
+            <Form.Label>내용 <span className="text-muted">(선택 사항)</span></Form.Label>
+            <Form.Control 
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="지출 또는 수입에 대한 설명"
+            />
           </Form.Group>
-          <Row className="mt-3">
-            <Col>
-              <Button className="w-100" variant="danger" onClick={(e) => handleSubmit(e, true)}>Add Expense (-)</Button>
-            </Col>
-            <Col>
-              <Button className="w-100" variant="success" onClick={(e) => handleSubmit(e, false)}>Add Income (+)</Button>
-            </Col>
-          </Row>
+          <div className="d-flex justify-content-end mt-3">
+            <Button variant="danger" onClick={handleAddExpense} className="me-2">지출 추가 (-)</Button>
+            <Button variant="success" onClick={handleAddIncome}>수입 추가 (+)</Button>
+          </div>
         </Form>
       </Card.Body>
     </Card>
